@@ -1,0 +1,29 @@
+services:
+  liquidator:
+    build: ./peridot-bots/liquidator
+    container_name: peridot-liquidator
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - bot-state:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  keeper:
+    build: ./peridot-bots/keeper
+    container_name: peridot-keeper
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - bot-state:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  bot-state:
