@@ -3,6 +3,7 @@ import { Keypair, rpc } from '@stellar/stellar-sdk';
 import { loadConfig } from './config.js';
 import { SorobanClient } from './contracts.js';
 import { LiquidationBot } from './liquidationBot.js';
+import { TelegramNotifier } from './notifier.js';
 import { RebalanceBot } from './rebalanceBot.js';
 
 async function main(): Promise<void> {
@@ -10,7 +11,16 @@ async function main(): Promise<void> {
   const server = new rpc.Server(config.rpcUrl, { allowHttp: config.rpcUrl.startsWith('http://') });
   const contracts = new SorobanClient(server, config.networkPassphrase);
 
-  const liquidationBot = new LiquidationBot(config, server, contracts);
+  const notifier = new TelegramNotifier(config.telegram.token, config.telegram.chatId);
+  if (notifier.isEnabled) {
+    const publicKey = Keypair.fromSecret(config.liquidatorSecret).publicKey();
+    await notifier.send(
+      `Peridot liquidator started\nAccount: ${publicKey}\nMarkets: ${config.markets.map(m => m.symbol).join(', ')}`,
+    );
+    console.info('[bot] telegram notifications enabled');
+  }
+
+  const liquidationBot = new LiquidationBot(config, server, contracts, notifier);
 
   const hasRebalanceConfig = Object.keys(config.underlyingTokens).length > 0;
   if (hasRebalanceConfig) {

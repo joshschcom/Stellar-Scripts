@@ -95,6 +95,27 @@ docker compose down
 
 Logs are JSON-file with rotation (10 MB x 3 per container), so they won't fill the disk. Keeper state (known borrowers, last scanned ledger) lives in the `bot-state` named volume and survives container rebuilds.
 
+## Telegram notifications
+
+Both bots can report to a team Telegram group. Setup (5 minutes):
+
+1. Message [@BotFather](https://t.me/BotFather) → `/newbot` → pick a name → copy the **bot token** (`123456:ABC-...`).
+2. Create a Telegram group for your team and add the bot to it.
+3. Get the group's **chat ID**: send any message in the group, then open
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser and read
+   `"chat":{"id":-100xxxxxxxxxx,...}` from the response (group IDs are negative).
+4. Put both values in `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) and
+   `docker compose up -d --build`.
+
+What you'll receive:
+
+- **Startup messages** from both bots (account + markets), so you know a restart happened.
+- **Liquidations** — immediate message per executed liquidation (borrower, repaid amount, seized collateral, tx hash), and a throttled warning when a liquidation keeps failing for a borrower.
+- **Daily keeper report** (`REPORT_INTERVAL_MS`) — keeper and liquidator balances per market token, plus per-loop ok/failed counts since the previous report.
+- **Low-balance alert** when the keeper's XLM drops below `KEEPER_MIN_XLM` (throttled to once per 30 min).
+
+Leaving the two variables blank disables all of it — the bots run exactly as before.
+
 ## Configuration reference
 
 See [.env.example](.env.example) for the full annotated list. Key variables:
@@ -113,6 +134,9 @@ See [.env.example](.env.example) for the full annotated list. Key variables:
 | `TTL_CONTRACT_IDS_JSON` | keeper | Contracts kept alive by the TTL loop; empty disables it |
 | `TTL_THRESHOLD_LEDGERS` / `TTL_EXTEND_TO_LEDGERS` | keeper | Default: extend below ~14 days remaining up to ~30 days |
 | `STATE_FILE` | keeper | Defaults to `/data/keeper-state.json` (on the `bot-state` volume) |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | both | Enables Telegram notifications; blank = disabled |
+| `REPORT_INTERVAL_MS` | keeper | Balance/stats report frequency (default daily) |
+| `KEEPER_MIN_XLM` | keeper | Low-balance alert threshold in whole XLM (default 5) |
 
 ## Local development
 

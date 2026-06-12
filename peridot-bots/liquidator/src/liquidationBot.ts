@@ -2,6 +2,7 @@ import { Keypair, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 
 import type { BotConfig, MarketConfig } from './config.js';
 import { SorobanClient } from './contracts.js';
+import { TelegramNotifier } from './notifier.js';
 import { sleep, toAddress, toU128 } from './utils.js';
 
 interface BorrowerState {
@@ -33,6 +34,7 @@ export class LiquidationBot {
     private readonly config: BotConfig,
     private readonly server: rpc.Server,
     private readonly contracts: SorobanClient,
+    private readonly notifier: TelegramNotifier = new TelegramNotifier(),
   ) {
     this.liquidator = Keypair.fromSecret(config.liquidatorSecret);
     this.contractIds = [
@@ -70,13 +72,12 @@ export class LiquidationBot {
   }
 
   private async pollEvents(): Promise<void> {
-    const request: rpc.Server.GetEventsRequest = {
-      filters: [{ type: 'contract', contractIds: this.contractIds }],
-      ...(this.cursor ? { cursor: this.cursor } : { startLedger: this.startLedger }),
-      limit: this.config.eventPageSize,
-    };
-
-    const res = await this.server.getEvents(request);
+    const filters = [{ type: 'contract' as const, contractIds: this.contractIds }];
+    const res = await this.server.getEvents(
+      this.cursor
+        ? { filters, cursor: this.cursor, limit: this.config.eventPageSize }
+        : { filters, startLedger: this.startLedger ?? 0, limit: this.config.eventPageSize },
+    );
 
     // Always advance cursor even on empty pages so we don't re-scan old ledgers.
     if (res.cursor) {
@@ -173,6 +174,13 @@ export class LiquidationBot {
       } catch (error) {
         state.failures += 1;
         console.error(`[liquidate] ${borrower} | ${formatError(error)}`);
+        if (state.failures === 3) {
+          // Notify once a borrower keeps failing, not on every retry.
+          await this.notifier.alert(
+            `liq-fail-${borrower}`,
+            `⚠️ Liquidation failing for ${borrower} (${state.failures} attempts)\n${truncate(formatError(error))}`,
+          );
+        }
       }
     }
   }
@@ -331,7 +339,21 @@ export class LiquidationBot {
     console.info(
       `[success] borrower=${plan.borrower} repay=${plan.repayMarket.symbol} amount=${plan.repayAmount} collateral=${plan.collateralMarket.symbol} seize=${plan.seizeAmount} result=${JSON.stringify(returnValue)}`,
     );
+
+    await this.notifier.send(
+      [
+        '✅ Liquidation executed',
+        `Borrower: ${plan.borrower}`,
+        `Repaid: ${plan.repayAmount} ${plan.repayMarket.symbol}`,
+        `Seized: ${plan.seizeAmount} p${plan.collateralMarket.symbol}`,
+        `Tx: ${successResponse.txHash ?? ''}`,
+      ].join('\n'),
+    );
   }
+}
+
+function truncate(text: string, max = 500): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 function extractAddress(value: unknown): string | undefined {

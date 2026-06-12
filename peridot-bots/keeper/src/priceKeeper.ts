@@ -1,4 +1,5 @@
 import { SorobanClient } from './soroban.js';
+import { recordCycle } from './stats.js';
 import { formatError, toAddress } from './utils.js';
 
 /**
@@ -24,5 +25,6 @@ export async function runPriceCycle(
     }
   }
 
+  recordCycle('price', ok, failed);
   console.info(`[price] cycle done: ${ok} ok, ${failed} failed (of ${tokens.length} tokens)`);
 }

@@ -22,7 +22,16 @@ export interface KeeperConfig {
     priceMs: number;
     ttlMs: number;
     borrowerTtlMs: number;
+    reportMs: number;
   };
+  telegram: {
+    token?: string;
+    chatId?: string;
+  };
+  /** Low-balance alert threshold for the keeper account, in stroops. */
+  keeperMinXlmStroops: bigint;
+  /** Optional: lets the report include the liquidator's balances too. */
+  liquidatorSecret?: string;
   ttl: {
     /** Extend entries whose remaining TTL is below this many ledgers. */
     thresholdLedgers: number;
@@ -116,7 +125,15 @@ export function loadConfig(): KeeperConfig {
       priceMs: intEnv('PRICE_INTERVAL_MS', 10 * ONE_MINUTE),
       ttlMs: intEnv('TTL_INTERVAL_MS', ONE_DAY),
       borrowerTtlMs: intEnv('BORROWER_TTL_INTERVAL_MS', ONE_DAY),
+      reportMs: intEnv('REPORT_INTERVAL_MS', ONE_DAY),
     },
+    telegram: {
+      token: process.env.TELEGRAM_BOT_TOKEN || undefined,
+      chatId: process.env.TELEGRAM_CHAT_ID || undefined,
+    },
+    // KEEPER_MIN_XLM is in whole XLM (default 5); stored in stroops (1e7).
+    keeperMinXlmStroops: BigInt(intEnv('KEEPER_MIN_XLM', 5, 0)) * 10_000_000n,
+    liquidatorSecret: process.env.LIQUIDATOR_SECRET || undefined,
     ttl: {
       thresholdLedgers: intEnv('TTL_THRESHOLD_LEDGERS', 14 * LEDGERS_PER_DAY),
       extendToLedgers: intEnv('TTL_EXTEND_TO_LEDGERS', 30 * LEDGERS_PER_DAY),

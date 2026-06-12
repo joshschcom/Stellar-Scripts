@@ -1,6 +1,7 @@
 import { rpc, xdr } from '@stellar/stellar-sdk';
 
 import { SorobanClient, contractCodeKey, contractInstanceKey } from './soroban.js';
+import { recordCycle } from './stats.js';
 import { formatError } from './utils.js';
 
 // Soroban caps entry TTL at ~6 months; never ask for more than this.
@@ -64,6 +65,7 @@ export async function runTtlCycle(
   }
 
   if (expiring.length === 0) {
+    recordCycle('ttl', 0, 0);
     console.info(`[ttl] cycle done: all ${candidates.length} entries healthy (threshold ${thresholdLedgers} ledgers)`);
     return;
   }
@@ -80,6 +82,7 @@ export async function runTtlCycle(
     }
   }
 
+  recordCycle('ttl', extended, expiring.length - extended);
   console.info(`[ttl] cycle done: ${extended}/${expiring.length} expiring entries extended`);
 }
 

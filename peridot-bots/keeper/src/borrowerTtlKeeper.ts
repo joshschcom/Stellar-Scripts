@@ -5,6 +5,7 @@ import { rpc, scValToNative } from '@stellar/stellar-sdk';
 
 import type { KeeperConfig } from './config.js';
 import { SorobanClient } from './soroban.js';
+import { recordCycle } from './stats.js';
 import { formatError, toAddress } from './utils.js';
 
 // Forget borrowers that have had no debt and no activity for this long.
@@ -41,9 +42,10 @@ export class BorrowerTtlKeeper {
     }
 
     await this.scanEvents();
-    const bumped = await this.bumpActiveBorrowers();
+    const { bumped, failed } = await this.bumpActiveBorrowers();
     await this.saveState();
 
+    recordCycle('borrower-ttl', bumped, failed);
     console.info(
       `[borrower-ttl] cycle done: tracking ${Object.keys(this.state.borrowers).length} borrowers, bumped ${bumped} vault entries`,
     );
@@ -142,9 +144,10 @@ export class BorrowerTtlKeeper {
     }
   }
 
-  private async bumpActiveBorrowers(): Promise<number> {
+  private async bumpActiveBorrowers(): Promise<{ bumped: number; failed: number }> {
     const now = Date.now();
     let bumped = 0;
+    let failed = 0;
 
     for (const [borrower, lastSeen] of Object.entries(this.state.borrowers)) {
       let hasDebt = false;
@@ -160,6 +163,7 @@ export class BorrowerTtlKeeper {
           await this.client.invoke(vault.vaultId, 'bump_user_borrow_ttl', [toAddress(borrower)]);
           bumped += 1;
         } catch (error) {
+          failed += 1;
           console.error(
             `[borrower-ttl] bump failed for ${borrower} on ${vault.symbol}: ${formatError(error)}`,
           );
@@ -171,7 +175,7 @@ export class BorrowerTtlKeeper {
       }
     }
 
-    return bumped;
+    return { bumped, failed };
   }
 }
 

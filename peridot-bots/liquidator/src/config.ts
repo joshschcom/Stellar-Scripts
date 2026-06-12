@@ -21,6 +21,10 @@ export interface BotConfig {
   // If omitted, rebalancing is disabled.
   underlyingTokens: Record<string, string>;
   rebalancePollIntervalMs: number;
+  telegram: {
+    token?: string;
+    chatId?: string;
+  };
 }
 
 function parseMarkets(json?: string | null): MarketConfig[] {
@@ -138,5 +142,9 @@ export function loadConfig(): BotConfig {
     eventPageSize,
     underlyingTokens,
     rebalancePollIntervalMs,
+    telegram: {
+      token: process.env.TELEGRAM_BOT_TOKEN || undefined,
+      chatId: process.env.TELEGRAM_CHAT_ID || undefined,
+    },
   };
 }

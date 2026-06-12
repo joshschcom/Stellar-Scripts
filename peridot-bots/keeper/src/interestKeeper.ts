@@ -1,5 +1,6 @@
 import type { VaultConfig } from './config.js';
 import { SorobanClient } from './soroban.js';
+import { recordCycle } from './stats.js';
 import { formatError } from './utils.js';
 
 /**
@@ -29,5 +30,6 @@ export async function runInterestCycle(
     }
   }
 
+  recordCycle('interest', ok, failed);
   console.info(`[interest] cycle done: ${ok} ok, ${failed} failed (of ${vaults.length} vaults)`);
 }
