@@ -11,7 +11,11 @@ async function main(): Promise<void> {
   const server = new rpc.Server(config.rpcUrl, { allowHttp: config.rpcUrl.startsWith('http://') });
   const contracts = new SorobanClient(server, config.networkPassphrase);
 
-  const notifier = new TelegramNotifier(config.telegram.token, config.telegram.chatId);
+  const notifier = new TelegramNotifier(
+    config.telegram.token,
+    config.telegram.chatId,
+    config.telegram.topicId,
+  );
   if (notifier.isEnabled) {
     const publicKey = Keypair.fromSecret(config.liquidatorSecret).publicKey();
     await notifier.send(

@@ -135,6 +135,7 @@ See [.env.example](.env.example) for the full annotated list. Key variables:
 | `TTL_THRESHOLD_LEDGERS` / `TTL_EXTEND_TO_LEDGERS` | keeper | Default: extend below ~14 days remaining up to ~30 days |
 | `STATE_FILE` | keeper | Defaults to `/data/keeper-state.json` (on the `bot-state` volume) |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | both | Enables Telegram notifications; blank = disabled |
+| `TELEGRAM_TOPIC_ID` | both | Topic (thread) ID for forum groups; blank = General topic |
 | `REPORT_INTERVAL_MS` | keeper | Balance/stats report frequency (default daily) |
 | `KEEPER_MIN_XLM` | keeper | Low-balance alert threshold in whole XLM (default 5) |
 

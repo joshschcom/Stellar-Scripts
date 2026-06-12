@@ -10,6 +10,8 @@ export class TelegramNotifier {
   constructor(
     private readonly token?: string,
     private readonly chatId?: string,
+    /** Topic (message thread) ID for forum-style groups with topics enabled. */
+    private readonly topicId?: string,
     /** Minimum gap between alerts sharing the same key (anti-spam). */
     private readonly alertThrottleMs = 30 * 60_000,
   ) {
@@ -28,6 +30,7 @@ export class TelegramNotifier {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           chat_id: this.chatId,
+          ...(this.topicId ? { message_thread_id: Number(this.topicId) } : {}),
           text: text.slice(0, 4000),
           disable_web_page_preview: true,
         }),

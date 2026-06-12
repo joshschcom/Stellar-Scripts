@@ -24,6 +24,7 @@ export interface BotConfig {
   telegram: {
     token?: string;
     chatId?: string;
+    topicId?: string;
   };
 }
 
@@ -145,6 +146,7 @@ export function loadConfig(): BotConfig {
     telegram: {
       token: process.env.TELEGRAM_BOT_TOKEN || undefined,
       chatId: process.env.TELEGRAM_CHAT_ID || undefined,
+      topicId: process.env.TELEGRAM_TOPIC_ID || undefined,
     },
   };
 }

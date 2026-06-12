@@ -44,7 +44,11 @@ async function main(): Promise<void> {
   const borrowerTtl = new BorrowerTtlKeeper(client, config);
   loops.push(runLoop('borrower-ttl', config.intervals.borrowerTtlMs, () => borrowerTtl.runCycle()));
 
-  const notifier = new TelegramNotifier(config.telegram.token, config.telegram.chatId);
+  const notifier = new TelegramNotifier(
+    config.telegram.token,
+    config.telegram.chatId,
+    config.telegram.topicId,
+  );
   if (notifier.isEnabled) {
     const liquidatorPublicKey = config.liquidatorSecret
       ? Keypair.fromSecret(config.liquidatorSecret).publicKey()

@@ -27,6 +27,7 @@ export interface KeeperConfig {
   telegram: {
     token?: string;
     chatId?: string;
+    topicId?: string;
   };
   /** Low-balance alert threshold for the keeper account, in stroops. */
   keeperMinXlmStroops: bigint;
@@ -130,6 +131,7 @@ export function loadConfig(): KeeperConfig {
     telegram: {
       token: process.env.TELEGRAM_BOT_TOKEN || undefined,
       chatId: process.env.TELEGRAM_CHAT_ID || undefined,
+      topicId: process.env.TELEGRAM_TOPIC_ID || undefined,
     },
     // KEEPER_MIN_XLM is in whole XLM (default 5); stored in stroops (1e7).
     keeperMinXlmStroops: BigInt(intEnv('KEEPER_MIN_XLM', 5, 0)) * 10_000_000n,
